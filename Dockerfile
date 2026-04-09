@@ -9,29 +9,32 @@ RUN apt-get update && apt-get install -y \
     build-essential \
     && rm -rf /var/lib/apt/lists/*
 
-# Install OpenAI CLI (optional, for direct API testing)
-# RUN npm install -g openai@latest
-
 # Install OpenClaw globally
 RUN npm install -g openclaw@latest
 
 # Set working directory
 WORKDIR /app
 
-# Copy config files
-COPY config/openclaw.json /root/.openclaw/openclaw.json
-COPY agents/ /root/.openclaw/workspace/skills/
+# Copy config and agents to staging area (NOT directly to /root/.openclaw)
+COPY config/openclaw.json ./config/openclaw.json
+COPY agents/ ./agents/
 
 # Copy scripts
 COPY scripts/ ./scripts/
 RUN chmod +x ./scripts/*.sh
 
 # Expose the Railway-assigned port
-EXPOSE $PORT
+EXPOSE ${PORT:-18789}
 
 # Health check endpoint
 HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
   CMD curl -f http://localhost:${PORT:-18789}/health || exit 1
 
-# Start OpenClaw gateway
-CMD ["sh", "-c", "openclaw gateway --port ${PORT:-18789} --host 0.0.0.0 --verbose"]
+# Copy config at runtime (so persistent volume doesn't shadow it), then start gateway
+CMD ["sh", "-c", "\
+  mkdir -p /root/.openclaw/workspace/skills && \
+  cp -f /app/config/openclaw.json /root/.openclaw/openclaw.json && \
+  cp -rf /app/agents/* /root/.openclaw/workspace/skills/ && \
+  openclaw gateway --port ${PORT:-18789} --verbose \
+"]
+
