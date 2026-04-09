@@ -1,0 +1,95 @@
+{
+  "agent": {
+    "model": "openai/gpt-4o",
+    "fallbackModel": "openai/gpt-4o-mini",
+    "workspace": "/root/.openclaw/workspace"
+  },
+
+  "gateway": {
+    "port": 18789,
+    "host": "0.0.0.0",
+    "bind": "all",
+    "auth": {
+      "mode": "password",
+      "password": "${OPENCLAW_GATEWAY_PASSWORD}"
+    }
+  },
+
+  "agents": {
+    "defaults": {
+      "thinkingLevel": "high",
+      "workspace": "/root/.openclaw/workspace",
+      "sandbox": {
+        "mode": "non-main"
+      }
+    },
+    "roles": {
+      "accountant": {
+        "model": "openai/gpt-4o",
+        "skillsDir": "/root/.openclaw/workspace/skills/accountant",
+        "systemPrompt": "You are Orion's Accountant agent. Your role: manage invoices, budgets, expense tracking, financial reports, and spreadsheet generation. Always confirm before any financial action. Respond concisely for voice TTS — keep spoken responses under 3 sentences, then offer detail on request.",
+        "tools": ["bash", "read", "write", "edit", "browser"]
+      },
+      "social-manager": {
+        "model": "openai/gpt-4o-mini",
+        "skillsDir": "/root/.openclaw/workspace/skills/social-manager",
+        "systemPrompt": "You are Orion's Social Media Manager agent. Your role: draft posts, schedule content, analyze engagement, reply to mentions, generate captions and hashtags. Optimise content per platform. Keep voice responses brief and action-oriented.",
+        "tools": ["bash", "read", "write", "edit", "browser"]
+      },
+      "project-manager": {
+        "model": "openai/gpt-4o",
+        "skillsDir": "/root/.openclaw/workspace/skills/project-manager",
+        "systemPrompt": "You are Orion's Project Manager agent. Your role: manage tasks, timelines, blockers, standup summaries, Slack/Discord updates, and sprint planning. Keep voice summaries to bullet points read aloud.",
+        "tools": ["bash", "read", "write", "edit", "browser", "sessions_send"]
+      }
+    }
+  },
+
+  "channels": {
+    "webchat": {
+      "enabled": true
+    },
+    "slack": {
+      "botToken": "${SLACK_BOT_TOKEN}",
+      "appToken": "${SLACK_APP_TOKEN}",
+      "dmPolicy": "pairing"
+    },
+    "discord": {
+      "token": "${DISCORD_BOT_TOKEN}",
+      "dmPolicy": "pairing"
+    },
+    "telegram": {
+      "botToken": "${TELEGRAM_BOT_TOKEN}"
+    }
+  },
+
+  "tts": {
+    "provider": "elevenlabs",
+    "apiKey": "${ELEVENLABS_API_KEY}",
+    "voiceId": "${ELEVENLABS_VOICE_ID}",
+    "fallback": "system"
+  },
+
+  "browser": {
+    "enabled": true,
+    "color": "#6C3FD1"
+  },
+
+  "cron": {
+    "enabled": true,
+    "jobs": [
+      {
+        "name": "morning-briefing",
+        "schedule": "0 8 * * *",
+        "agent": "project-manager",
+        "message": "Generate today's morning briefing: summarise all open tasks, any overdue items, and today's priorities. Keep it under 90 seconds when read aloud."
+      },
+      {
+        "name": "eod-summary",
+        "schedule": "0 18 * * 1-5",
+        "agent": "accountant",
+        "message": "Generate end-of-day financial summary: any new expenses logged, invoices pending, budget burn for today."
+      }
+    ]
+  }
+}
